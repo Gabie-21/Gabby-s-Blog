@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="particles" id="particles"></div>
     <div class="progress-bar" id="progressBar"></div>
 
     <header>
@@ -582,6 +583,17 @@
     
     <!-- JAVASCRIPT -->
     <script>
+        // Create floating particles
+            function createParticles() {
+                const particlesContainer = document.getElementById('particles');
+                for (let i = 0; i < 20; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDuration = (Math.random() * 3 + 5) + 's';
+                    particle.style.animationDelay = Math.random() * 5 + 's';
+                    particlesContainer.appendChild(particle);
+                }
         document.addEventListener("DOMContentLoaded", function () {
             const buttons = document.querySelectorAll(".read-more");
 
