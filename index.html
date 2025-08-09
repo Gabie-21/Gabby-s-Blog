@@ -583,7 +583,13 @@
     
     <!-- JAVASCRIPT -->
     <script>
-        // Create floating particles
+        // Progress bar
+            window.addEventListener('scroll', () => {
+                const scrolled = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+                document.getElementById('progressBar').style.width = scrolled + '%';
+            });
+
+            // Create floating particles
             function createParticles() {
                 const particlesContainer = document.getElementById('particles');
                 for (let i = 0; i < 20; i++) {
@@ -594,145 +600,202 @@
                     particle.style.animationDelay = Math.random() * 5 + 's';
                     particlesContainer.appendChild(particle);
                 }
-        document.addEventListener("DOMContentLoaded", function () {
-            const buttons = document.querySelectorAll(".read-more");
+            }
 
-            buttons.forEach(btn => {
-                btn.addEventListener("click", function (e) {
+            // Initialize particles on page load
+            createParticles();
+
+            // Store full stories content for new submissions
+            const fullStories = new Map();
+            let storyIdCounter = 0;
+
+            // Read More functionality for EXISTING stories
+            document.addEventListener("DOMContentLoaded", function () {
+                const buttons = document.querySelectorAll(".read-more");
+
+                buttons.forEach(btn => {
+                    btn.addEventListener("click", function (e) {
+                        e.preventDefault();
+
+                        const article = btn.closest(".story-card");
+                        const excerpt = article.querySelector(".story-excerpt");
+                        const fullText = article.querySelector(".story-full");
+
+                        if (fullText.style.display === "none" || fullText.style.display === "") {
+                            // Show full story
+                            excerpt.style.display = "none";
+                            fullText.style.display = "block";
+                            btn.innerHTML = 'Read Less <i class="fas fa-arrow-up"></i>';
+
+                            // Smooth scroll to keep the story in view
+                            setTimeout(() => {
+                                article.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }, 100);
+                        } else {
+                            // Show excerpt only
+                            excerpt.style.display = "block";
+                            fullText.style.display = "none";
+                            btn.innerHTML = 'Read More <i class="fas fa-arrow-right"></i>';
+                        }
+                    });
+                });
+            });
+
+            // Read More functionality for NEW stories (from form submissions)
+            function toggleReadMore(storyId, element) {
+                const storyCard = element.closest('.story-card');
+                const excerptElement = storyCard.querySelector('.story-excerpt');
+                const fullContent = fullStories.get(storyId);
+
+                if (!fullContent) return;
+
+                const isExpanded = element.textContent.includes('Read Less');
+
+                if (isExpanded) {
+                    // Show excerpt
+                    excerptElement.textContent = fullContent.substring(0, 150) + '...';
+                    excerptElement.style.display = 'block';
+                    element.innerHTML = 'Read More <i class="fas fa-arrow-right"></i>';
+                } else {
+                    // Show full content
+                    excerptElement.textContent = fullContent;
+                    element.innerHTML = 'Read Less <i class="fas fa-arrow-up"></i>';
+                    // Smooth expand animation
+                    setTimeout(() => {
+                        storyCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+                }
+            }
+
+            // Story editor toggle (if you have a form)
+            function toggleStoryEditor() {
+                const editor = document.getElementById('storyEditor');
+                if (editor) {
+                    editor.classList.toggle('active');
+                    if (editor.classList.contains('active')) {
+                        editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }
+
+            // Form submission (if you have a story submission form)
+            const storyForm = document.getElementById('storyForm');
+            if (storyForm) {
+                storyForm.addEventListener('submit', function (e) {
                     e.preventDefault();
 
-                    const article = btn.closest(".story-card");
-                    const fullText = article.querySelector(".story-full");
+                    const title = document.getElementById('storyTitle').value;
+                    const category = document.getElementById('storyCategory').value;
+                    const content = document.getElementById('storyContent').value;
+                    const author = document.getElementById('authorName').value || 'Anonymous';
 
-                    if (fullText.style.display === "none") {
-                        fullText.style.display = "block";
-                        btn.innerHTML = 'Read Less <i class="fas fa-arrow-up"></i>';
-                    } else {
-                        fullText.style.display = "none";
-                        btn.innerHTML = 'Read More <i class="fas fa-arrow-right"></i>';
+                    if (!title || !content) {
+                        alert('Please fill in at least the title and story content.');
+                        return;
+                    }
+
+                    // Generate unique story ID
+                    const storyId = 'story-' + (++storyIdCounter);
+
+                    // Store full content
+                    fullStories.set(storyId, content);
+
+                    // Create new story card
+                    const storiesGrid = document.querySelector('.stories-grid');
+                    const newStoryCard = document.createElement('article');
+                    newStoryCard.className = 'story-card';
+                    newStoryCard.style.animation = 'fadeInUp 0.5s ease';
+                    newStoryCard.setAttribute('data-story-id', storyId);
+
+                    const currentDate = new Date().toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+
+                    const shouldShowReadMore = content.length > 150;
+                    const displayContent = shouldShowReadMore ? content.substring(0, 150) + '...' : content;
+                    const readMoreButton = shouldShowReadMore ?
+                        `<a href="#" class="read-more" onclick="toggleReadMore('${storyId}', this); return false;">Read More <i class="fas fa-arrow-right"></i></a>` :
+                        '';
+
+                    newStoryCard.innerHTML = `
+            <div class="story-meta">
+                <span class="story-category">${category || 'Personal'}</span>
+                <span><i class="far fa-calendar"></i> ${currentDate}</span>
+            </div>
+            <h3>${title}</h3>
+            <p class="story-excerpt">${displayContent}</p>
+            <div class="story-footer">
+                <span class="author"><i class="fas fa-user"></i> By ${author}</span>
+                ${readMoreButton}
+            </div>
+        `;
+
+                    storiesGrid.insertBefore(newStoryCard, storiesGrid.firstChild);
+
+                    // Clear form and hide editor
+                    this.reset();
+                    if (document.getElementById('storyEditor')) {
+                        toggleStoryEditor();
+                    }
+
+                    // Success message
+                    alert('Your story has been shared! Thank you for opening your heart and helping others through your experience.');
+
+                    // Scroll to the new story
+                    setTimeout(() => {
+                        newStoryCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                });
+            }
+
+            // Smooth scrolling for navigation
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
                     }
                 });
             });
-        });
-    </script>
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 Stories Like Scars. Every story shared with love and courage.</p>
-            <div class="social-links">
-                <a href="#"><i class="fab fa-facebook"></i></a>
-                <a href="#"><i class="fab fa-instagram"></i></a>
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fab fa-pinterest"></i></a>
-            </div>
-        </div>
-    </footer>
+            // Add hover effects to story cards
+            document.addEventListener('DOMContentLoaded', function () {
+                function addHoverEffects() {
+                    document.querySelectorAll('.story-card').forEach(card => {
+                        // Remove existing listeners to prevent duplicates
+                        card.removeEventListener('mouseenter', cardHoverIn);
+                        card.removeEventListener('mouseleave', cardHoverOut);
 
-    <script>
-        // Progress bar
-        window.addEventListener('scroll', () => {
-            const scrolled = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-            document.getElementById('progressBar').style.width = scrolled + '%';
-        });
-
-        // Story editor toggle
-        function toggleStoryEditor() {
-            const editor = document.getElementById('storyEditor');
-            editor.classList.toggle('active');
-            if (editor.classList.contains('active')) {
-                editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
-        // Form submission
-        document.getElementById('storyForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            const title = document.getElementById('storyTitle').value;
-            const category = document.getElementById('storyCategory').value;
-            const content = document.getElementById('storyContent').value;
-            const author = document.getElementById('authorName').value || 'Anonymous';
-
-            if (!title || !content) {
-                alert('Please fill in at least the title and story content.');
-                return;
-            }
-
-            // Create new story card
-            const storiesGrid = document.querySelector('.stories-grid');
-            const newStoryCard = document.createElement('article');
-            newStoryCard.className = 'story-card';
-            newStoryCard.style.animation = 'fadeInUp 0.5s ease';
-
-            const currentDate = new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-
-            newStoryCard.innerHTML = `
-                <div class="story-meta">
-                    <span class="story-category">${category || 'Personal'}</span>
-                    <span><i class="far fa-calendar"></i> ${currentDate}</span>
-                </div>
-                <h3>${title}</h3>
-                <p class="story-excerpt">${content.substring(0, 150)}...</p>
-                <div class="story-footer">
-                    <span class="author"><i class="fas fa-user"></i> By ${author}</span>
-                    <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
-                </div>
-            `;
-
-            storiesGrid.insertBefore(newStoryCard, storiesGrid.firstChild);
-
-            // Clear form and hide editor
-            document.getElementById('storyForm').reset();
-            toggleStoryEditor();
-
-            // Success message
-            alert('Your story has been shared! Thank you for opening your heart and helping others through your experience.');
-
-            // Scroll to the new story
-            setTimeout(() => {
-                newStoryCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
-        });
-
-        // Smooth scrolling for navigation
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
+                        // Add new listeners
+                        card.addEventListener('mouseenter', cardHoverIn);
+                        card.addEventListener('mouseleave', cardHoverOut);
                     });
                 }
+
+                function cardHoverIn() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                }
+
+                function cardHoverOut() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                }
+
+                // Apply to existing cards
+                addHoverEffects();
+
+                // Apply to new cards when they're added
+                const storiesGrid = document.querySelector('.stories-grid');
+                if (storiesGrid) {
+                    const observer = new MutationObserver(addHoverEffects);
+                    observer.observe(storiesGrid, { childList: true });
+                }
             });
-        });
-
-        // Add hover effects to story cards
-        document.addEventListener('DOMContentLoaded', function () {
-            function addHoverEffects() {
-                document.querySelectorAll('.story-card').forEach(card => {
-                    card.addEventListener('mouseenter', function () {
-                        this.style.transform = 'translateY(-10px) scale(1.02)';
-                    });
-
-                    card.addEventListener('mouseleave', function () {
-                        this.style.transform = 'translateY(0) scale(1)';
-                    });
-                });
-            }
-
-            // Apply to existing cards
-            addHoverEffects();
-
-            // Apply to new cards when they're added
-            const observer = new MutationObserver(addHoverEffects);
-            observer.observe(document.querySelector('.stories-grid'), { childList: true });
-        });
     </script>
 </body>
 
