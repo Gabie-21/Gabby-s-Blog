@@ -67,6 +67,37 @@ header {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+.logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #333;
+    font-size: 1.5rem;
+    font-weight: bold;
+   
+}
+
+.logo img {
+    height: 90px;
+    margin-right: 10px;
+    border-radius: 25%;
+}
+
+.site-title i {
+    color: crimson;
+    margin-right: 5px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .logo img {
+        height: 40px;
+    }
+
+    .logo {
+        font-size: 1.2rem;
+    }
+}
 
 nav ul {
     display: flex;
@@ -469,5 +500,28 @@ footer {
 
     .story-card h3 {
         font-size: 1.2rem;
+    }
+}
+ @media (max-width: 768px) {
+    body {
+        font-size: 16px;
+    }
+
+    p {
+        text-indent: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 15px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    p {
+        text-indent: 15px;
     }
 }
